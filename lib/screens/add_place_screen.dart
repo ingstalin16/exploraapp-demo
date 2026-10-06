@@ -34,7 +34,9 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Agregar lugar')),
+      appBar: AppBar(
+        title: Text('agregar_lugar'.tr),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -43,39 +45,59 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
             children: [
               TextFormField(
                 controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre del lugar', hintText: 'Ej. Parque El Ejido'),
-                validator: (valor) => (valor == null || valor.trim().isEmpty) ? 'El nombre es obligatorio' : null,
+                decoration: InputDecoration(
+                  labelText: 'nombre_lugar'.tr,
+                ),
+                validator: (valor) => (valor == null || valor.trim().isEmpty)
+                    ? 'El nombre es obligatorio'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _categoriaController,
-                decoration: const InputDecoration(labelText: 'Categoría', hintText: 'Ej. Cafeterías'),
-                validator: (valor) => (valor == null || valor.trim().isEmpty) ? 'La categoría es obligatoria' : null,
+                decoration: InputDecoration(
+                  labelText: 'categoria'.tr,
+                ),
+                validator: (valor) => (valor == null || valor.trim().isEmpty)
+                    ? 'La categoría es obligatoria'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descripcionController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
+                decoration: InputDecoration(
+                  labelText: 'descripcion'.tr,
+                ),
                 maxLines: 3,
                 validator: (valor) =>
-                    (valor == null || valor.trim().length < 10) ? 'Escribe al menos 10 caracteres' : null,
+                    (valor == null || valor.trim().length < 10)
+                        ? 'Escribe al menos 10 caracteres'
+                        : null,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    Get.find<PlacesController>().agregarLugar(Place(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      nombre: _nombreController.text.trim(),
-                      categoria: _categoriaController.text.trim(),
-                      descripcion: _descripcionController.text.trim(),
-                      lat: -0.1807,
-                      lng: -78.4859,
-                    ));
+                    Get.find<PlacesController>().agregarLugar(
+                      Place(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        nombre: _nombreController.text.trim(),
+                        categoria: _categoriaController.text.trim(),
+                        descripcion: _descripcionController.text.trim(),
+                        lat: -0.1807,
+                        lng: -78.4859,
+                      ),
+                    );
+
                     Get.back();
+
+                    Get.snackbar(
+                      'lugar_agregado'.tr,
+                      'lugar_agregado_msg'.tr,
+                    );
                   }
                 },
-                child: const Text('Guardar'),
+                child: Text('guardar'.tr),
               ),
             ],
           ),

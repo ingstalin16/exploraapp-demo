@@ -22,6 +22,11 @@ class PlacesController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    ever(estado, (EstadoCarga e) {
+      if (e == EstadoCarga.error) {
+        Get.snackbar('Error', mensajeError.value);
+      }
+    });
     cargarLugares();
   }
 
@@ -48,19 +53,19 @@ class PlacesController extends GetxController {
     // `fetchLugaresSimulado` devuelve la lista global `lugaresEjemplo`, y
     // asignarla directo haría que `lugares` y `lugaresEjemplo` fueran la
     // misma lista, con lo que `agregarLugar` duplicaría cada lugar nuevo.
-    lugares.value = [];
-    estado.value = EstadoCarga.exito;
-    // try {
-    //   final resultado = await fetchLugaresSimulado(
-    //     forzarError: _modoDebugError,
-    //     forzarVacio: _modoDebugVacio,
-    //   );
-    //   lugares.assignAll(resultado);
-    //   estado.value = EstadoCarga.exito;
-    // } catch (e) {
-    //   mensajeError.value = '$e';
-    //   estado.value = EstadoCarga.error;
-    // }
+    // lugares.value = [];
+    // estado.value = EstadoCarga.exito;
+    try {
+      final resultado = await fetchLugaresSimulado(
+        forzarError: _modoDebugError,
+        forzarVacio: _modoDebugVacio,
+      );
+      lugares.assignAll(resultado);
+      estado.value = EstadoCarga.exito;
+    } catch (e) {
+      mensajeError.value = '$e';
+      estado.value = EstadoCarga.error;
+    }
   }
 
   /// Agrega un lugar creado a mano (`AddPlaceScreen`) — en memoria
@@ -88,12 +93,15 @@ class PlacesController extends GetxController {
   // `PlaceCard` no cambia al tocarlo. La versión real agrega o quita el
   // lugar de la lista reactiva `favoritos`: cualquier `Obx` que la lea (el
   // ícono del corazón, el contador de la pestaña Favoritos) se actualiza solo.
-  void alternarFavorito(Place lugar) {}
-  // void alternarFavorito(Place lugar) {
-  //   if (esFavorito(lugar)) {
-  //     favoritos.removeWhere((p) => p.id == lugar.id);
-  //   } else {
-  //     favoritos.add(lugar);
-  //   }
-  // }
+  //void alternarFavorito(Place lugar) {}
+  void alternarFavorito(Place lugar) {
+    if (esFavorito(lugar)) {
+      favoritos.removeWhere((p) => p.id == lugar.id);
+    } else {
+      favoritos.add(lugar);
+    }
+  }
+
+  /// Estado derivado: se calcula a partir de `lugares`, no se guarda aparte.
+  int get total => lugares.length;
 }
