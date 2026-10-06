@@ -60,7 +60,7 @@ class AppTheme {
   /// que consulta `Theme.of(context)` la toma sin cambiar una sola línea.
   /// A propósito NO fija colores de texto ni de fondo — los que fijaba `theme`
   /// (navy sobre blanco) serían ilegibles sobre un fondo oscuro.
-  static ThemeData get  darkTheme {
+  static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: teal,
       secondary: orange,
