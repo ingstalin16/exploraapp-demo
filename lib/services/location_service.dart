@@ -34,14 +34,15 @@ class LocationService {
     // completar este paso — el bloque real primero consulta el permiso
     // actual y, si está denegado, recién ahí lo solicita al usuario
     // (nunca se solicita un permiso que ya fue concedido antes).
-    var permiso = LocationPermission.denied;
-    // var permiso = await Geolocator.checkPermission();
-    // if (permiso == LocationPermission.denied) {
-    //   permiso = await Geolocator.requestPermission();
-    // }
+    //var permiso = LocationPermission.denied;
+    var permiso = await Geolocator.checkPermission();
+    if (permiso == LocationPermission.denied) {
+      permiso = await Geolocator.requestPermission();
+    }
 
     if (permiso == LocationPermission.denied) {
-      throw LocationException('Permiso de ubicación denegado. ExploraEC lo necesita para mostrarte lugares cercanos.');
+      throw LocationException(
+          'Permiso de ubicación denegado. ExploraEC lo necesita para mostrarte lugares cercanos.');
     }
     if (permiso == LocationPermission.deniedForever) {
       throw LocationException(
@@ -58,7 +59,8 @@ class LocationService {
 /// Distancia entre la posición actual y un [Place], en metros — usa la
 /// fórmula de Haversine que ya trae `geolocator`, sin reimplementarla.
 double distanciaAPlaceEnMetros(Position origen, Place destino) {
-  return Geolocator.distanceBetween(origen.latitude, origen.longitude, destino.lat, destino.lng);
+  return Geolocator.distanceBetween(
+      origen.latitude, origen.longitude, destino.lat, destino.lng);
 }
 
 /// Formatea una distancia en metros a un texto corto y legible.
