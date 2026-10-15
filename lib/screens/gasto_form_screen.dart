@@ -87,36 +87,25 @@ class _GastoFormScreenState extends State<GastoFormScreen> {
               TextFormField(
                 controller: _descripcion,
                 maxLength: 200,
-                decoration: const InputDecoration(
-                    labelText: 'Descripción', border: OutlineInputBorder()),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Escribe una descripción'
-                    : null,
+                decoration: const InputDecoration(labelText: 'Descripción', border: OutlineInputBorder()),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Escribe una descripción' : null,
               ),
               const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _monto,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                    labelText: 'Monto', border: OutlineInputBorder()),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Monto', border: OutlineInputBorder()),
                 validator: (v) {
                   final n = double.tryParse((v ?? '').replaceAll(',', '.'));
-                  return (n == null || n <= 0)
-                      ? 'El monto debe ser mayor a 0'
-                      : null;
+                  return (n == null || n <= 0) ? 'El monto debe ser mayor a 0' : null;
                 },
               ),
               const SizedBox(height: AppSpacing.md),
               Obx(() => DropdownButtonFormField<String>(
-                    initialValue: _gastos.categorias.contains(_categoria)
-                        ? _categoria
-                        : null,
-                    decoration: const InputDecoration(
-                        labelText: 'Categoría', border: OutlineInputBorder()),
+                    initialValue: _gastos.categorias.contains(_categoria) ? _categoria : null,
+                    decoration: const InputDecoration(labelText: 'Categoría', border: OutlineInputBorder()),
                     items: [
-                      for (final c in _gastos.categorias)
-                        DropdownMenuItem(value: c, child: Text(c)),
+                      for (final c in _gastos.categorias) DropdownMenuItem(value: c, child: Text(c)),
                     ],
                     onChanged: (v) => setState(() => _categoria = v),
                     validator: (v) => v == null ? 'Elige una categoría' : null,
@@ -125,17 +114,12 @@ class _GastoFormScreenState extends State<GastoFormScreen> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: Text(_error!,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)),
+                  child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ),
               FilledButton(
                 onPressed: _guardando ? null : _guardar,
                 child: _guardando
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                     : Text(_esEdicion ? 'Guardar cambios' : 'Guardar'),
               ),
             ],

@@ -12,8 +12,7 @@ class SecureTokenStorage {
 
   Future<String?> leer() => _almacen.read(key: _clave);
 
-  Future<void> guardar(String token) =>
-      _almacen.write(key: _clave, value: token);
+  Future<void> guardar(String token) => _almacen.write(key: _clave, value: token);
 
   Future<void> borrar() => _almacen.delete(key: _clave);
 }
