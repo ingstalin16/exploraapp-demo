@@ -14,6 +14,7 @@ import '../widgets/loading_view.dart';
 import '../widgets/sin_sesion_view.dart';
 import 'cambiar_password_screen.dart';
 import 'gasto_form_screen.dart';
+import '../theme/app_theme.dart';
 
 /// Sección «Gastos del viaje» — Sesión 6. Desde la Sesión 8 solo se muestra
 /// con sesión iniciada (si no, `SinSesionView`) y permite crear, editar y
@@ -103,10 +104,11 @@ class GastosScreen extends GetView<GastosController> {
                   ),
                 ],
               ),
+            _buildFiltroCategorias(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.cargarGastos,
-                child: _buildLista(context, controller.gastos),
+                child: _buildLista(context, controller.gastosFiltrados),
               ),
             ),
           ],
@@ -115,7 +117,46 @@ class GastosScreen extends GetView<GastosController> {
     );
   }
 
+  Widget _buildFiltroCategorias() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      child: Row(
+        children: [
+          FilterChip(
+            label: const Text('Todas'),
+            selected: controller.categoriaSeleccionada.value == 'Todas',
+            onSelected: (_) => controller.seleccionarCategoria('Todas'),
+          ),
+          for (final categoria in controller.categoriasEnGastos) ...[
+            const SizedBox(width: AppSpacing.sm),
+            FilterChip(
+              label: Text(categoria),
+              selected: controller.categoriaSeleccionada.value == categoria,
+              onSelected: (seleccionado) {
+                controller.seleccionarCategoria(seleccionado ? categoria : 'Todas');
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildLista(BuildContext context, List<Gasto> gastos) {
+    if (gastos.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Center(
+              child: Text('No hay gastos en esta categoría'),
+            ),
+          ),
+        ],
+      );
+    }
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: gastos.length,
