@@ -174,7 +174,10 @@ class GastosScreen extends GetView<GastosController> {
                   ),
                 ],
               ),
+
+            // Filtro por categoría generado en la Sesión 10.
             _buildFiltroCategorias(),
+
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.cargarGastos,
