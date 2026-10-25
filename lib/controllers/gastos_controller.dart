@@ -15,36 +15,92 @@ import 'places_controller.dart' show EstadoCarga;
 /// se agrega el CRUD completo.
 class GastosController extends GetxController {
   final AuthController _auth = Get.find<AuthController>();
+
   late final GastosApiService _api = GastosApiService(Get.find<ApiClient>());
+
   late final GastosRepository _repository = GastosRepository(_api);
 
   final RxList<Gasto> gastos = <Gasto>[].obs;
+
   final Rx<EstadoCarga> estado = EstadoCarga.exito.obs;
+
   final RxString mensajeError = ''.obs;
+
   final RxInt totalEnServidor = 0.obs;
 
   /// Categorías que define el backend (`GET /gastos/categorias`).
   final RxList<String> categorias = <String>[].obs;
 
-  /// `true` solo cuando la última carga exitosa vino de la caché local (el
-  /// servidor no respondió): la UI lo usa para avisar «datos guardados».
+  /// Categoría actualmente seleccionada en el filtro de la pantalla.
+  ///
+  /// `Todas` significa que no se aplica ningún filtro.
+  final RxString categoriaSeleccionada = 'Todas'.obs;
+
+  /// `true` solo cuando la última carga exitosa vino de la caché local
+  /// (el servidor no respondió): la UI lo usa para avisar
+  /// «datos guardados».
   final RxBool desdeCache = false.obs;
+
   String get ultimaSincronizacion => _repository.ultimaSincronizacion;
+
+  /// Devuelve las categorías que realmente existen en los gastos cargados.
+  ///
+  /// Se usa para construir dinámicamente los FilterChip de la pantalla.
+  List<String> get categoriasEnGastos {
+    final resultado = gastos
+        .map((gasto) => gasto.categoria.trim())
+        .where((categoria) => categoria.isNotEmpty)
+        .toSet()
+        .toList();
+
+    resultado.sort();
+
+    return resultado;
+  }
+
+  /// Devuelve los gastos según la categoría seleccionada.
+  ///
+  /// Si la categoría seleccionada es `Todas`, se devuelve la lista completa.
+  List<Gasto> get gastosFiltrados {
+    if (categoriaSeleccionada.value == 'Todas') {
+      return gastos.toList();
+    }
+
+    return gastos
+        .where(
+          (gasto) => gasto.categoria == categoriaSeleccionada.value,
+        )
+        .toList();
+  }
+
+  /// Cambia la categoría usada por el filtro.
+  void seleccionarCategoria(String categoria) {
+    categoriaSeleccionada.value = categoria;
+  }
 
   @override
   void onInit() {
     super.onInit();
-    // Cuando `AuthController` deja un usuario (login, registro o sesión
-    // restaurada), se cargan sus datos. Si ya hay uno, se cargan de una vez.
+
+    // Cuando `AuthController` deja un usuario
+    // (login, registro o sesión restaurada),
+    // se cargan sus datos.
     ever(_auth.usuario, (u) {
-      if (u != null) iniciar();
+      if (u != null) {
+        iniciar();
+      }
     });
-    if (_auth.estaAutenticado) iniciar();
+
+    if (_auth.estaAutenticado) {
+      iniciar();
+    }
   }
 
-  /// Abre la caja del usuario, pide las categorías y carga sus gastos.
+  /// Abre la caja del usuario, pide las categorías
+  /// y carga sus gastos.
   Future<void> iniciar() async {
     estado.value = EstadoCarga.cargando;
+
     try {
       await _repository.abrirParaUsuario();
       await cargarCategorias();
@@ -53,11 +109,13 @@ class GastosController extends GetxController {
       estado.value = EstadoCarga.error;
       return;
     }
+
     await cargarGastos();
   }
 
   Future<void> cargarGastos() async {
     estado.value = EstadoCarga.cargando;
+
     try {
       await _refrescar();
       estado.value = EstadoCarga.exito;
@@ -67,65 +125,112 @@ class GastosController extends GetxController {
     }
   }
 
-  /// Vuelve a pedir la lista al repositorio sin pasar por «cargando»: se usa
-  /// después de crear, editar o eliminar para que la pantalla no parpadee.
+  /// Vuelve a pedir la lista al repositorio sin pasar por «cargando»:
+  /// se usa después de crear, editar o eliminar para que la pantalla
+  /// no parpadee.
   Future<void> _refrescar() async {
     final (lista, cache) = await _repository.obtenerGastos();
+
     gastos.value = lista;
     totalEnServidor.value = lista.length;
     desdeCache.value = cache;
+
+    // Si la categoría seleccionada ya no existe entre los gastos,
+    // vuelve automáticamente a "Todas".
+    if (categoriaSeleccionada.value != 'Todas' &&
+        !categoriasEnGastos.contains(
+          categoriaSeleccionada.value,
+        )) {
+      categoriaSeleccionada.value = 'Todas';
+    }
   }
 
   Future<void> cargarCategorias() async {
-    // Por qué: las categorías (y el límite de 500) las decide el servidor; la
-    // app solo las muestra. Si mañana el backend agrega una, aparece sola.
+    // Por qué: las categorías (y el límite de 500)
+    // las decide el servidor; la app solo las muestra.
+    // Si mañana el backend agrega una, aparece sola.
     final r = await _api.listarCategorias();
-    categorias.assignAll(r.categorias);
+
+    categorias.assignAll(
+      r.categorias,
+    );
   }
 
-  /// Crea un gasto. Si el servidor lo rechaza (por ejemplo, el límite de 500),
-  /// lanza `ApiException` con el mensaje para que el formulario lo muestre.
-  Future<void> crear(String descripcion, double monto, String categoria) async {
-    // Por qué: se manda el gasto al servidor y la pantalla se actualiza con lo
-    // que el servidor guardó realmente (no se supone que salió bien).
-    await _api.crear({'descripcion': descripcion, 'monto': monto, 'categoria': categoria});
+  /// Crea un gasto. Si el servidor lo rechaza
+  /// (por ejemplo, el límite de 500),
+  /// lanza `ApiException` con el mensaje
+  /// para que el formulario lo muestre.
+  Future<void> crear(
+    String descripcion,
+    double monto,
+    String categoria,
+  ) async {
+    // Por qué: se manda el gasto al servidor y
+    // la pantalla se actualiza con lo que el servidor
+    // guardó realmente.
+    await _api.crear({
+      'descripcion': descripcion,
+      'monto': monto,
+      'categoria': categoria,
+    });
+
     await _refrescar();
   }
 
   /// Edita un gasto enviando SOLO los campos que cambiaron.
-  Future<void> actualizar(int id, Map<String, dynamic> cambios) async {
-    // Por qué: PATCH modifica solo lo que se envía. Si el gasto ya no existe
-    // (404), se refresca la lista para que desaparezca de la pantalla.
+  Future<void> actualizar(
+    int id,
+    Map<String, dynamic> cambios,
+  ) async {
+    // Por qué: PATCH modifica solo lo que se envía.
+    // Si el gasto ya no existe (404), se refresca la lista.
     try {
-      await _api.actualizar(id, cambios);
+      await _api.actualizar(
+        id,
+        cambios,
+      );
     } on ApiException catch (e) {
-      if (e.statusCode == 404) await _refrescar();
+      if (e.statusCode == 404) {
+        await _refrescar();
+      }
+
       rethrow;
     }
+
     await _refrescar();
   }
 
   Future<void> eliminar(int id) async {
-    // Por qué: mismo patrón que editar. El servidor responde 204 (sin cuerpo)
-    // y la lista se vuelve a pedir, así la caché de Hive también se actualiza.
+    // Por qué: mismo patrón que editar.
+    // El servidor responde 204 (sin cuerpo)
+    // y la lista se vuelve a pedir.
     try {
       await _api.eliminar(id);
     } on ApiException catch (e) {
-      if (e.statusCode == 404) await _refrescar();
+      if (e.statusCode == 404) {
+        await _refrescar();
+      }
+
       rethrow;
     }
+
     await _refrescar();
   }
 
-  /// Resumen por categoría (Sesión 9): lo que se le envía al asistente.
+  /// Resumen por categoría (Sesión 9):
+  /// lo que se le envía al asistente.
   Future<ResumenGastos> obtenerResumen() => _api.obtenerResumen();
 
-  /// Borra todo lo de la persona que cierra sesión: la lista en pantalla y su
-  /// caja de Hive (`GastosRepository.vaciar`, Sesión 7).
+  /// Borra todo lo de la persona que cierra sesión:
+  /// la lista en pantalla y su caja de Hive.
   Future<void> limpiar() async {
     await _repository.vaciar();
+
     gastos.clear();
     categorias.clear();
+
+    categoriaSeleccionada.value = 'Todas';
+
     totalEnServidor.value = 0;
     desdeCache.value = false;
     mensajeError.value = '';
