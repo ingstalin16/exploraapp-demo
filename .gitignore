@@ -47,3 +47,7 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 .agents/mcp_config.json
+# Archivos sensibles/locales
+.env
+.claude/settings.local.json
+CLAUDE.local.md

@@ -7,12 +7,14 @@ import '../controllers/gastos_controller.dart';
 import '../controllers/places_controller.dart' show EstadoCarga;
 import '../models/gasto.dart';
 import '../services/api_exception.dart';
+import 'pantalla_con_fallo.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/sin_sesion_view.dart';
 import 'cambiar_password_screen.dart';
 import 'gasto_form_screen.dart';
+import '../theme/app_theme.dart';
 
 /// Sección «Gastos del viaje» — Sesión 6. Desde la Sesión 8 solo se muestra
 /// con sesión iniciada (si no, `SinSesionView`) y permite crear, editar y
@@ -46,13 +48,26 @@ class GastosScreen extends GetView<GastosController> {
             onSelected: (valor) {
               if (valor == 'salir') auth.cerrarSesion();
               if (valor == 'invalidar') auth.invalidarTokenParaPruebas();
-                            if (valor == 'password') Get.to(() => const CambiarPasswordScreen());
+              if (valor == 'password') Get.to(() => const CambiarPasswordScreen());
+              // Solo práctica (Sesión 10, Paso 2): provocan errores a propósito.
+              if (valor == 'error_pantalla') Get.to(() => const PantallaConFallo());
+              if (valor == 'error_async') {
+                Future<void>.delayed(Duration.zero, () => throw StateError('Fallo asíncrono provocado a propósito'));
+              }
+              // Por qué: pantalla opcional con las licencias de los paquetes que usa la app.
+              // TODO(sesion-10) OPCIONAL Paso 10: descomenta la línea de abajo (abrir «Acerca de»).
+              // if (valor == 'acerca') showLicensePage(context: context, applicationName: 'ExploraEC', applicationVersion: '1.0.0');
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'password', child: Text('Cambiar contraseña')),
               const PopupMenuItem(value: 'salir', child: Text('Cerrar sesión')),
-              if (kDebugMode)
-                const PopupMenuItem(value: 'invalidar', child: Text('Invalidar token (solo práctica)')),
+              // TODO(sesion-10) OPCIONAL Paso 10: descomenta la línea de abajo (opción del menú).
+              // const PopupMenuItem(value: 'acerca', child: Text('Acerca de')),
+              if (kDebugMode) ...const [
+                PopupMenuItem(value: 'invalidar', child: Text('Invalidar token (solo práctica)')),
+                PopupMenuItem(value: 'error_pantalla', child: Text('Error de pantalla (solo práctica)')),
+                PopupMenuItem(value: 'error_async', child: Text('Error asíncrono (solo práctica)')),
+              ],
             ],
           ),
         ],
@@ -89,10 +104,11 @@ class GastosScreen extends GetView<GastosController> {
                   ),
                 ],
               ),
+            _buildFiltroCategorias(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.cargarGastos,
-                child: _buildLista(context, controller.gastos),
+                child: _buildLista(context, controller.gastosFiltrados),
               ),
             ),
           ],
@@ -101,7 +117,46 @@ class GastosScreen extends GetView<GastosController> {
     );
   }
 
+  Widget _buildFiltroCategorias() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      child: Row(
+        children: [
+          FilterChip(
+            label: const Text('Todas'),
+            selected: controller.categoriaSeleccionada.value == 'Todas',
+            onSelected: (_) => controller.seleccionarCategoria('Todas'),
+          ),
+          for (final categoria in controller.categoriasEnGastos) ...[
+            const SizedBox(width: AppSpacing.sm),
+            FilterChip(
+              label: Text(categoria),
+              selected: controller.categoriaSeleccionada.value == categoria,
+              onSelected: (seleccionado) {
+                controller.seleccionarCategoria(seleccionado ? categoria : 'Todas');
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildLista(BuildContext context, List<Gasto> gastos) {
+    if (gastos.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Center(
+              child: Text('No hay gastos en esta categoría'),
+            ),
+          ),
+        ],
+      );
+    }
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: gastos.length,
