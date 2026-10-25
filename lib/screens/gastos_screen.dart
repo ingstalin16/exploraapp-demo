@@ -7,14 +7,14 @@ import '../controllers/gastos_controller.dart';
 import '../controllers/places_controller.dart' show EstadoCarga;
 import '../models/gasto.dart';
 import '../services/api_exception.dart';
-import 'pantalla_con_fallo.dart';
+import '../theme/app_theme.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/sin_sesion_view.dart';
 import 'cambiar_password_screen.dart';
 import 'gasto_form_screen.dart';
-import '../theme/app_theme.dart';
+import 'pantalla_con_fallo.dart';
 
 /// Sección «Gastos del viaje» — Sesión 6. Desde la Sesión 8 solo se muestra
 /// con sesión iniciada (si no, `SinSesionView`) y permite crear, editar y
@@ -25,11 +25,15 @@ class GastosScreen extends GetView<GastosController> {
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
+
     return Obx(() {
       // Por qué: los gastos son de una persona concreta; sin sesión el servidor
       // respondería 401. El `Obx` lee `estaAutenticado`, así que la pantalla
       // cambia sola al iniciar o cerrar sesión.
-      if (!auth.estaAutenticado) return const SinSesionView();
+      if (!auth.estaAutenticado) {
+        return const SinSesionView();
+      }
+
       return _buildGastos(context, auth);
     });
   }
@@ -37,7 +41,11 @@ class GastosScreen extends GetView<GastosController> {
   Widget _buildGastos(BuildContext context, AuthController auth) {
     return Scaffold(
       appBar: AppBar(
-        title: Obx(() => Text('${'gastos'.tr} (${controller.totalEnServidor.value})')),
+        title: Obx(
+          () => Text(
+            '${'gastos'.tr} (${controller.totalEnServidor.value})',
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -46,57 +54,119 @@ class GastosScreen extends GetView<GastosController> {
           ),
           PopupMenuButton<String>(
             onSelected: (valor) {
-              if (valor == 'salir') auth.cerrarSesion();
-              if (valor == 'invalidar') auth.invalidarTokenParaPruebas();
-              if (valor == 'password') Get.to(() => const CambiarPasswordScreen());
-              // Solo práctica (Sesión 10, Paso 2): provocan errores a propósito.
-              if (valor == 'error_pantalla') Get.to(() => const PantallaConFallo());
-              if (valor == 'error_async') {
-                Future<void>.delayed(Duration.zero, () => throw StateError('Fallo asíncrono provocado a propósito'));
+              if (valor == 'salir') {
+                auth.cerrarSesion();
               }
-              // Por qué: pantalla opcional con las licencias de los paquetes que usa la app.
-              // TODO(sesion-10) OPCIONAL Paso 10: descomenta la línea de abajo (abrir «Acerca de»).
-              // if (valor == 'acerca') showLicensePage(context: context, applicationName: 'ExploraEC', applicationVersion: '1.0.0');
+
+              if (valor == 'invalidar') {
+                auth.invalidarTokenParaPruebas();
+              }
+
+              if (valor == 'password') {
+                Get.to(() => const CambiarPasswordScreen());
+              }
+
+              // Solo práctica (Sesión 10, Paso 2):
+              // provocan errores a propósito.
+              if (valor == 'error_pantalla') {
+                Get.to(() => const PantallaConFallo());
+              }
+
+              if (valor == 'error_async') {
+                Future<void>.delayed(
+                  Duration.zero,
+                  () => throw StateError(
+                    'Fallo asíncrono provocado a propósito',
+                  ),
+                );
+              }
+
+              // Por qué: pantalla opcional con las licencias de los paquetes
+              // que usa la app.
+              // TODO(sesion-10) OPCIONAL Paso 10:
+              // descomenta la línea de abajo (abrir «Acerca de»).
+              //
+              // if (valor == 'acerca') {
+              //   showLicensePage(
+              //     context: context,
+              //     applicationName: 'ExploraEC',
+              //     applicationVersion: '1.0.0',
+              //   );
+              // }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'password', child: Text('Cambiar contraseña')),
-              const PopupMenuItem(value: 'salir', child: Text('Cerrar sesión')),
-              // TODO(sesion-10) OPCIONAL Paso 10: descomenta la línea de abajo (opción del menú).
-              // const PopupMenuItem(value: 'acerca', child: Text('Acerca de')),
+              const PopupMenuItem(
+                value: 'password',
+                child: Text('Cambiar contraseña'),
+              ),
+              const PopupMenuItem(
+                value: 'salir',
+                child: Text('Cerrar sesión'),
+              ),
+
+              // TODO(sesion-10) OPCIONAL Paso 10:
+              // descomenta la línea de abajo (opción del menú).
+              //
+              // const PopupMenuItem(
+              //   value: 'acerca',
+              //   child: Text('Acerca de'),
+              // ),
+
               if (kDebugMode) ...const [
-                PopupMenuItem(value: 'invalidar', child: Text('Invalidar token (solo práctica)')),
-                PopupMenuItem(value: 'error_pantalla', child: Text('Error de pantalla (solo práctica)')),
-                PopupMenuItem(value: 'error_async', child: Text('Error asíncrono (solo práctica)')),
+                PopupMenuItem(
+                  value: 'invalidar',
+                  child: Text('Invalidar token (solo práctica)'),
+                ),
+                PopupMenuItem(
+                  value: 'error_pantalla',
+                  child: Text('Error de pantalla (solo práctica)'),
+                ),
+                PopupMenuItem(
+                  value: 'error_async',
+                  child: Text('Error asíncrono (solo práctica)'),
+                ),
               ],
             ],
           ),
         ],
       ),
+
       // Por qué: el botón «+» abre el formulario vacío para crear un gasto.
       floatingActionButton: FloatingActionButton(
         onPressed: () => Get.to(() => const GastoFormScreen()),
         child: const Icon(Icons.add),
       ),
+
       body: Obx(() {
         if (controller.estado.value == EstadoCarga.cargando) {
-          return const LoadingView(mensaje: 'Cargando gastos...');
+          return const LoadingView(
+            mensaje: 'Cargando gastos...',
+          );
         }
+
         if (controller.estado.value == EstadoCarga.error) {
           return ErrorView(
             mensaje: controller.mensajeError.value,
             onReintentar: controller.iniciar,
           );
         }
+
         if (controller.gastos.isEmpty) {
-          return const EmptyView(mensaje: 'Aún no registras gastos en este viaje');
+          return const EmptyView(
+            mensaje: 'Aún no registras gastos en este viaje',
+          );
         }
+
         return Column(
           children: [
             if (controller.desdeCache.value)
               MaterialBanner(
                 leading: const Icon(Icons.cloud_off),
                 content: Text(
-                    'Sin conexión — gastos guardados (última sincronización: ${controller.ultimaSincronizacion})'),
+                  'Sin conexión — gastos guardados '
+                  '(última sincronización: '
+                  '${controller.ultimaSincronizacion})',
+                ),
                 actions: [
                   TextButton(
                     onPressed: controller.cargarGastos,
@@ -108,7 +178,10 @@ class GastosScreen extends GetView<GastosController> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.cargarGastos,
-                child: _buildLista(context, controller.gastosFiltrados),
+                child: _buildLista(
+                  context,
+                  controller.gastosFiltrados,
+                ),
               ),
             ),
           ],
@@ -120,13 +193,18 @@ class GastosScreen extends GetView<GastosController> {
   Widget _buildFiltroCategorias() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
       child: Row(
         children: [
           FilterChip(
             label: const Text('Todas'),
             selected: controller.categoriaSeleccionada.value == 'Todas',
-            onSelected: (_) => controller.seleccionarCategoria('Todas'),
+            onSelected: (_) {
+              controller.seleccionarCategoria('Todas');
+            },
           ),
           for (final categoria in controller.categoriasEnGastos) ...[
             const SizedBox(width: AppSpacing.sm),
@@ -134,7 +212,9 @@ class GastosScreen extends GetView<GastosController> {
               label: Text(categoria),
               selected: controller.categoriaSeleccionada.value == categoria,
               onSelected: (seleccionado) {
-                controller.seleccionarCategoria(seleccionado ? categoria : 'Todas');
+                controller.seleccionarCategoria(
+                  seleccionado ? categoria : 'Todas',
+                );
               },
             ),
           ],
@@ -143,7 +223,10 @@ class GastosScreen extends GetView<GastosController> {
     );
   }
 
-  Widget _buildLista(BuildContext context, List<Gasto> gastos) {
+  Widget _buildLista(
+    BuildContext context,
+    List<Gasto> gastos,
+  ) {
     if (gastos.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -151,30 +234,47 @@ class GastosScreen extends GetView<GastosController> {
           Padding(
             padding: EdgeInsets.all(AppSpacing.lg),
             child: Center(
-              child: Text('No hay gastos en esta categoría'),
+              child: Text(
+                'No hay gastos en esta categoría',
+              ),
             ),
           ),
         ],
       );
     }
+
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: gastos.length,
       itemBuilder: (context, i) {
         final g = gastos[i];
+
         return ListTile(
           title: Text(g.descripcion),
-          subtitle: Text('${g.categoria} · ${g.fecha}'),
-          // Por qué: tocar una fila abre el mismo formulario, ya relleno.
-          onTap: () => Get.to(() => GastoFormScreen(gasto: g)),
+          subtitle: Text(
+            '${g.categoria} · ${g.fecha}',
+          ),
+
+          // Por qué: tocar una fila abre el mismo formulario,
+          // ya relleno.
+          onTap: () => Get.to(
+            () => GastoFormScreen(gasto: g),
+          ),
+
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(g.monto.toStringAsFixed(2), style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                g.monto.toStringAsFixed(2),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Eliminar',
-                onPressed: () => confirmarEliminar(context, g),
+                onPressed: () => confirmarEliminar(
+                  context,
+                  g,
+                ),
               ),
             ],
           ),
@@ -185,23 +285,47 @@ class GastosScreen extends GetView<GastosController> {
 
   /// Pide confirmación antes de borrar; si el servidor falla, avisa con el
   /// mensaje que devolvió.
-  Future<void> confirmarEliminar(BuildContext context, Gasto g) async {
+  Future<void> confirmarEliminar(
+    BuildContext context,
+    Gasto g,
+  ) async {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (dialogo) => AlertDialog(
-        title: Text('¿Eliminar "${g.descripcion}"?'),
-        content: const Text('Esta acción no se puede deshacer.'),
+        title: Text(
+          '¿Eliminar "${g.descripcion}"?',
+        ),
+        content: const Text(
+          'Esta acción no se puede deshacer.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogo, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(dialogo, true), child: const Text('Eliminar')),
+          TextButton(
+            onPressed: () => Navigator.pop(
+              dialogo,
+              false,
+            ),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogo,
+              true,
+            ),
+            child: const Text('Eliminar'),
+          ),
         ],
       ),
     );
+
     if (confirmado != true) return;
+
     try {
       await controller.eliminar(g.id);
     } on ApiException catch (e) {
-      Get.snackbar('No se pudo eliminar', e.mensaje);
+      Get.snackbar(
+        'No se pudo eliminar',
+        e.mensaje,
+      );
     }
   }
 }
